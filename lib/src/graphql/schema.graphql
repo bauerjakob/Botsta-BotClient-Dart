@@ -1,0 +1,124 @@
+schema {
+  query: BotstaQuery
+  mutation: BotstaMutation
+  subscription: BotstaSubscription
+}
+
+type BotstaQuery {
+  # Returns list of all registerd chat practicants (users and bots)
+  allChatPracticants: [ChatPracticant]
+
+  # Returns list of all registerd users (only users not bots)
+  allUsers: [GraphUserType]
+
+  # Returns the chtroom behind the given id.
+  chatroom(chatroomId: String): GraphChatroomType
+
+  # Returns all chatrooms of current user.
+  chatrooms: [GraphChatroomType]
+
+  # Returns a list of chat practicants of a chatroom
+  getChatPracticantsOfChatroom(chatroomId: String): [ChatPracticant]
+
+  # Returns all bots where current user is owner
+  getOwnBots: [Bot]
+
+  # Returns informations about the current user.
+  whoami: ChatPracticant
+}
+
+type ChatPracticant {
+  id: ID!
+  isBot: Boolean!
+  isUser: Boolean!
+  keyExchange: [KeyExchange]
+  name: String!
+  type: String
+}
+
+type KeyExchange {
+  chatPracticantId: ID!
+  publicKey: String!
+  sessionId: ID!
+}
+
+type GraphUserType {
+  id: String!
+  keyExchange: [KeyExchange]
+  username: String!
+}
+
+type GraphChatroomType {
+  id: ID!
+  latestMessage: GraphMessageType
+  messages: [GraphMessageType]
+  name: String
+  type: String!
+}
+
+type GraphMessageType {
+  chatroomId: ID!
+  id: ID!
+  message: String!
+  sender: ChatPracticant
+  senderPublicKey: String!
+  sendTime: DateTimeOffset!
+}
+
+# The `DateTimeOffset` scalar type represents a date, time and offset from UTC. `DateTimeOffset` expects timestamps to be formatted in accordance with the [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) standard.
+scalar DateTimeOffset
+
+type Bot {
+  id: ID!
+  isPublic: Boolean!
+  keyExchange: [KeyExchange]
+  name: String!
+  ownerId: ID!
+}
+
+type BotstaMutation {
+  # Delete messages from server
+  deleteMessages(messageIds: [String]): String
+  login(name: String!, secret: String!, publicKey: String!): Login
+
+  # Logout
+  logout: String
+
+  # Create a new chatroom
+  newChatroomGroup(name: String, practicantIds: [String]): GraphChatroomType
+
+  # Create a new chatroom
+  newChatroomSingle(practicantId: String): GraphChatroomType
+
+  # Post message to chatroom
+  postMessage(
+    chatroomId: String
+    message: String
+    receiverSessionId: String
+  ): GraphMessageType
+  refreshToken: RefreshToken
+  register(username: String!, password: String!, publicKey: String!): Login
+
+  # Register new bot
+  registerBot(botName: String, isPublic: Boolean): String
+}
+
+type Login {
+  errorCode: String
+  errorMessage: String
+  hasError: Boolean!
+  refreshToken: String
+  token: String
+}
+
+type RefreshToken {
+  errorCode: String
+  errorMessage: String
+  hasError: Boolean!
+  token: String
+}
+
+type BotstaSubscription {
+  messageReceived(refreshToken: String): GraphMessageType
+}
+

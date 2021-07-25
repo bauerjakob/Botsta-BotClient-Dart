@@ -1,0 +1,9 @@
+mutation Login($name: String!, $secret: String!, $publicKey: String!) {
+  login(name: $name, secret: $secret, publicKey: $publicKey) {
+    token
+    refreshToken
+    hasError
+    errorCode
+    errorMessage
+  }
+}

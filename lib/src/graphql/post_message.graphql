@@ -1,0 +1,9 @@
+mutation PostMessage($chatroomId: String!, $message: String!, $receiverSessionId: String!) {
+  postMessage(chatroomId: $chatroomId, message:$message, receiverSessionId:$receiverSessionId) {
+    id,
+    sender {
+      id
+      name
+    }
+  }
+}

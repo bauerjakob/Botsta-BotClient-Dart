@@ -1,0 +1,14 @@
+subscription MessageSubscription($refreshToken: String!) {
+  messageReceived(refreshToken: $refreshToken) {
+  	sender {
+      id
+      name
+      isBot
+    }
+    message
+  	chatroomId
+  	id
+    sendTime
+    senderPublicKey
+  }
+}
