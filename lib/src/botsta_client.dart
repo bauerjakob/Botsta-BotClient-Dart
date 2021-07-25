@@ -56,26 +56,8 @@ class BotstaClient {
 
   Future sendMessageBuilderAsync(String chatroomId, BotstaMessageBuilder messageBuilder) async {
     var message = messageBuilder.getMessage();
-
     if (message != null) {
-      final keyExchange = await _chatroomKeyExchangeAsync(chatroomId);
-
-      final client = await _getHttpClientAsync();
-      
-      final sendRequests = <Future<dynamic>>[];
-      
-      keyExchange.forEach((sessionId, publicKey) async {
-        var encryptedMessage = await _e2eeService.encryptMessageAsync(message, publicKey);
-        var request = client.requestFirst(GPostMessageReq((b) => b
-          ..vars.chatroomId = chatroomId
-          ..vars.message = encryptedMessage
-          ..vars.receiverSessionId = sessionId));
-        sendRequests.add(request);
-      });
-
-      await Future.wait(sendRequests);
-
-      await client.dispose();
+      await sendMessageAsync(chatroomId, message);
     }
   }
 
