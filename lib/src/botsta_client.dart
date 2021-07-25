@@ -1,6 +1,7 @@
 
 import 'dart:async';
 
+import 'package:botsta_botclient/botsta_botclient.dart';
 import 'package:botsta_botclient/src/graphql/login.req.gql.dart';
 import 'package:botsta_botclient/src/graphql/message_subscription.req.gql.dart';
 import 'package:botsta_botclient/src/graphql/post_message.req.gql.dart';
@@ -8,7 +9,7 @@ import 'package:botsta_botclient/src/models/message.dart';
 import 'package:botsta_botclient/src/services/e2ee_service.dart';
 import 'package:graphql/client.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
-import 'package:botsta_botclient/src/extensions/extensions.dart';
+import 'package:botsta_botclient/src/extensions/graphql_extensions.dart';
 import 'package:ferry/ferry.dart';
 
 import 'graphql/chatroom_key_exchange.req.gql.dart';
@@ -51,6 +52,31 @@ class BotstaClient {
     await Future.wait(sendRequests);
 
     await client.dispose();
+  }
+
+  Future sendMessageBuilderAsync(String chatroomId, BotstaMessageBuilder messageBuilder) async {
+    var message = messageBuilder.getMessage();
+
+    if (message != null) {
+      final keyExchange = await _chatroomKeyExchangeAsync(chatroomId);
+
+      final client = await _getHttpClientAsync();
+      
+      final sendRequests = <Future<dynamic>>[];
+      
+      keyExchange.forEach((sessionId, publicKey) async {
+        var encryptedMessage = await _e2eeService.encryptMessageAsync(message, publicKey);
+        var request = client.requestFirst(GPostMessageReq((b) => b
+          ..vars.chatroomId = chatroomId
+          ..vars.message = encryptedMessage
+          ..vars.receiverSessionId = sessionId));
+        sendRequests.add(request);
+      });
+
+      await Future.wait(sendRequests);
+
+      await client.dispose();
+    }
   }
 
   Future<Stream<Message>> messageSubscriptionAsync() async {
