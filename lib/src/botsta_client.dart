@@ -1,5 +1,6 @@
 
 import 'package:botsta_botclient/src/graphql/login.req.gql.dart';
+import 'package:botsta_botclient/src/services/e2ee_service.dart';
 import 'package:graphql/client.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:botsta_botclient/src/extensions/extensions.dart';
@@ -13,6 +14,7 @@ class BotstaClient {
   late String _serverUrl;
   late String _serverUrlWebsocket;
 
+  late E2EEService _e2eeService;
   late String? _refreshToken;
   String? _token;
 
@@ -58,12 +60,15 @@ class BotstaClient {
   }
 
   Future _loginAsync() async {
+    _e2eeService = E2EEService();
+    await _e2eeService.initAsync();
+
     final client = await _getHttpClientWithTokenAsync(null);
 
     var loginRes = await client.requestFirst(GLoginReq((b) => b
       ..vars.name = _botName
       ..vars.secret = _apiKey
-      ..vars.publicKey = 'todo'));
+      ..vars.publicKey = _e2eeService.publicKey!));
 
     await client.dispose();
 
