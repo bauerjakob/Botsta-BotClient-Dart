@@ -1,3 +1,12 @@
+import 'package:botsta_botclient/src/graphql/chatroom_key_exchange.data.gql.dart'
+    show
+        GChatroomKeyExchangeData,
+        GChatroomKeyExchangeData_getChatPracticantsOfChatroom,
+        GChatroomKeyExchangeData_getChatPracticantsOfChatroom_keyExchange;
+import 'package:botsta_botclient/src/graphql/chatroom_key_exchange.req.gql.dart'
+    show GChatroomKeyExchangeReq;
+import 'package:botsta_botclient/src/graphql/chatroom_key_exchange.var.gql.dart'
+    show GChatroomKeyExchangeVars;
 import 'package:botsta_botclient/src/graphql/login.data.gql.dart'
     show GLoginData, GLoginData_login;
 import 'package:botsta_botclient/src/graphql/login.req.gql.dart' show GLoginReq;
@@ -53,6 +62,11 @@ final SerializersBuilder _serializersBuilder = _$serializers.toBuilder()
   ..add(OperationSerializer())
   ..addPlugin(StandardJsonPlugin());
 @SerializersFor([
+  GChatroomKeyExchangeData,
+  GChatroomKeyExchangeData_getChatPracticantsOfChatroom,
+  GChatroomKeyExchangeData_getChatPracticantsOfChatroom_keyExchange,
+  GChatroomKeyExchangeReq,
+  GChatroomKeyExchangeVars,
   GDateTimeOffset,
   GLoginData,
   GLoginData_login,

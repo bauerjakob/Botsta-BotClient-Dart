@@ -7,6 +7,12 @@ part of 'serializers.gql.dart';
 // **************************************************************************
 
 Serializers _$serializers = (new Serializers().toBuilder()
+      ..add(GChatroomKeyExchangeData.serializer)
+      ..add(GChatroomKeyExchangeData_getChatPracticantsOfChatroom.serializer)
+      ..add(GChatroomKeyExchangeData_getChatPracticantsOfChatroom_keyExchange
+          .serializer)
+      ..add(GChatroomKeyExchangeReq.serializer)
+      ..add(GChatroomKeyExchangeVars.serializer)
       ..add(GDateTimeOffset.serializer)
       ..add(GLoginData.serializer)
       ..add(GLoginData_login.serializer)
@@ -32,7 +38,21 @@ Serializers _$serializers = (new Serializers().toBuilder()
       ..add(GWhoAmIData.serializer)
       ..add(GWhoAmIData_whoami.serializer)
       ..add(GWhoAmIReq.serializer)
-      ..add(GWhoAmIVars.serializer))
+      ..add(GWhoAmIVars.serializer)
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [
+            const FullType(
+                GChatroomKeyExchangeData_getChatPracticantsOfChatroom)
+          ]),
+          () => new ListBuilder<
+              GChatroomKeyExchangeData_getChatPracticantsOfChatroom>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [
+            const FullType(
+                GChatroomKeyExchangeData_getChatPracticantsOfChatroom_keyExchange)
+          ]),
+          () => new ListBuilder<
+              GChatroomKeyExchangeData_getChatPracticantsOfChatroom_keyExchange>()))
     .build();
 
 // ignore_for_file: always_put_control_body_on_new_line,always_specify_types,annotate_overrides,avoid_annotating_with_dynamic,avoid_as,avoid_catches_without_on_clauses,avoid_returning_this,deprecated_member_use_from_same_package,lines_longer_than_80_chars,omit_local_variable_types,prefer_expression_function_bodies,sort_constructors_first,test_types_in_equals,unnecessary_const,unnecessary_new

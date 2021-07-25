@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:botsta_botclient/src/graphql/login.req.gql.dart';
 import 'package:botsta_botclient/src/graphql/message_subscription.req.gql.dart';
+import 'package:botsta_botclient/src/graphql/post_message.req.gql.dart';
 import 'package:botsta_botclient/src/models/message.dart';
 import 'package:botsta_botclient/src/services/e2ee_service.dart';
 import 'package:graphql/client.dart';
@@ -10,6 +11,7 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:botsta_botclient/src/extensions/extensions.dart';
 import 'package:ferry/ferry.dart';
 
+import 'graphql/chatroom_key_exchange.req.gql.dart';
 import 'graphql/refresh_token.req.gql.dart';
 
 class BotstaClient {
@@ -21,6 +23,7 @@ class BotstaClient {
   late E2EEService _e2eeService;
   String? _refreshToken;
   String? _token;
+  String? _sessionId;
 
   BotstaClient(String botName, String apiKey, String serverUrl, String serverUrlWebsocket) {
     _botName = botName;
@@ -29,7 +32,28 @@ class BotstaClient {
     _serverUrlWebsocket = serverUrlWebsocket;
   }
 
-  Future<Stream<Message>> messageSubscription() async {
+  Future sendMessageAsync(String chatroomId, String message) async {
+    final keyExchange = await _chatroomKeyExchangeAsync(chatroomId);
+
+    final client = await _getHttpClientAsync();
+    
+    final sendRequests = <Future<dynamic>>[];
+    
+    keyExchange.forEach((sessionId, publicKey) async {
+      var encryptedMessage = await _e2eeService.encryptMessageAsync(message, publicKey);
+      var request = client.requestFirst(GPostMessageReq((b) => b
+        ..vars.chatroomId = chatroomId
+        ..vars.message = encryptedMessage
+        ..vars.receiverSessionId = sessionId));
+      sendRequests.add(request);
+    });
+
+    await Future.wait(sendRequests);
+
+    await client.dispose();
+  }
+
+  Future<Stream<Message>> messageSubscriptionAsync() async {
     final client = await _getHttpClientAsync();
 
     return client.request(GMessageSubscriptionReq((b) => b..vars.refreshToken = _refreshToken!))
@@ -51,6 +75,33 @@ class BotstaClient {
       })
       .where((event) => event != null)
       .map((event) => event!);
+  }
+
+  Future<Map<String, String>> _chatroomKeyExchangeAsync(String chatroomId) async {
+    final client = await _getHttpClientAsync();
+
+    var res = await client.requestFirst(GChatroomKeyExchangeReq((b) => b
+      ..vars.chatroomId = chatroomId));
+
+    await client.dispose();
+
+    if (res.hasErrors || res.data?.getChatPracticantsOfChatroom == null) {
+      throw Exception();
+    }
+
+    var result = <String, String>{};
+
+    res.data!.getChatPracticantsOfChatroom!.forEach((chatPracticant) { 
+      if (chatPracticant.keyExchange != null) {
+        chatPracticant.keyExchange!.forEach((key) {
+          if (key.sessionId != _sessionId!) {
+            result.putIfAbsent(key.sessionId, () => key.publicKey);
+          }
+        });
+      }
+    });
+
+    return result;
   }
 
 
@@ -110,11 +161,12 @@ class BotstaClient {
       var res = loginRes.data!.login!;
       _refreshToken = res.refreshToken;
       _token = res.token;
+      _sessionId = JwtDecoder.decode(_refreshToken!)['jti'];
   }
   
 
   Future _refreshTokenAsync() async {
-    final client = await _getHttpClientWithTokenAsync(null);
+    final client = await _getHttpClientWithTokenAsync(_refreshToken);
     var res = await client.requestFirst(GRefreshTokenReq());
 
     if (res.hasErrors || res.data?.refreshToken == null || res.data!.refreshToken!.hasError) {
