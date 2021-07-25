@@ -1,5 +1,9 @@
 
+import 'dart:async';
+
 import 'package:botsta_botclient/src/graphql/login.req.gql.dart';
+import 'package:botsta_botclient/src/graphql/message_subscription.req.gql.dart';
+import 'package:botsta_botclient/src/models/message.dart';
 import 'package:botsta_botclient/src/services/e2ee_service.dart';
 import 'package:graphql/client.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
@@ -15,15 +19,40 @@ class BotstaClient {
   late String _serverUrlWebsocket;
 
   late E2EEService _e2eeService;
-  late String? _refreshToken;
+  String? _refreshToken;
   String? _token;
 
   BotstaClient(String botName, String apiKey, String serverUrl, String serverUrlWebsocket) {
     _botName = botName;
     _apiKey = apiKey;
     _serverUrl = serverUrl;
-    _serverUrlWebsocket;
+    _serverUrlWebsocket = serverUrlWebsocket;
   }
+
+  Future<Stream<Message>> messageSubscription() async {
+    final client = await _getHttpClientAsync();
+
+    return client.request(GMessageSubscriptionReq((b) => b..vars.refreshToken = _refreshToken!))
+      .asyncMap<Message?>((event) async {
+        if (event.data?.messageReceived != null) {
+           var msgData = event.data!.messageReceived!;
+
+           final decrypedMessage = await _e2eeService.decrypMessageAsync(msgData.message, msgData.senderPublicKey);
+           
+           return Message(
+             msgData.id,
+             decrypedMessage,
+             msgData.chatroomId,
+             DateTime.parse(msgData.sendTime.value),
+           );
+        }
+
+        return null;
+      })
+      .where((event) => event != null)
+      .map((event) => event!);
+  }
+
 
   Future<Client> _getHttpClientAsync() async {
     final token = await _getTokenAsync();
